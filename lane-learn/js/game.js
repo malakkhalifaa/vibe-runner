@@ -425,24 +425,48 @@ function onKeyDown(e) {
   }
 }
 
-let touchStartX = null;
+/** @type {number | null} */
+let pointerDragStartX = null;
+/** @type {number | null} */
+let activeRoadPointerId = null;
 
-function onTouchStart(ev) {
-  if (ev.touches.length !== 1) return;
-  touchStartX = ev.touches[0].clientX;
+function onRoadPointerDown(ev) {
+  if (!ev.isPrimary) return;
+  if (ev.pointerType === "mouse" && ev.button !== 0) return;
+  pointerDragStartX = ev.clientX;
+  activeRoadPointerId = ev.pointerId;
+  try {
+    gameHost?.setPointerCapture(ev.pointerId);
+  } catch {
+    /* ignore */
+  }
 }
 
-function onTouchEnd(ev) {
-  if (touchStartX == null) return;
-  const endX = ev.changedTouches[0].clientX;
-  const dx = endX - touchStartX;
-  touchStartX = null;
+function onRoadPointerUp(ev) {
+  if (!ev.isPrimary || activeRoadPointerId !== ev.pointerId) return;
+  if (pointerDragStartX == null) return;
+  const startX = pointerDragStartX;
+  pointerDragStartX = null;
+  activeRoadPointerId = null;
+  try {
+    gameHost?.releasePointerCapture(ev.pointerId);
+  } catch {
+    /* ignore */
+  }
+  const endX = ev.clientX;
+  const dx = endX - startX;
   if (Math.abs(dx) < 24) {
     setLane(laneFromClientX(endX));
     return;
   }
   if (dx < 0) moveLane(-1);
   else moveLane(1);
+}
+
+function onRoadPointerCancel(ev) {
+  if (activeRoadPointerId !== ev.pointerId) return;
+  pointerDragStartX = null;
+  activeRoadPointerId = null;
 }
 
 function spawnScorePop(text, x, y, hue = "#fbbf24") {
@@ -673,9 +697,10 @@ export function startGame(profile) {
 
   if (!inputBound) {
     window.addEventListener("keydown", onKeyDown);
-    const te = gameHost || fxCanvas;
-    te?.addEventListener("touchstart", onTouchStart, { passive: true });
-    te?.addEventListener("touchend", onTouchEnd, { passive: true });
+    const surface = gameHost || fxCanvas;
+    surface?.addEventListener("pointerdown", onRoadPointerDown);
+    surface?.addEventListener("pointerup", onRoadPointerUp);
+    surface?.addEventListener("pointercancel", onRoadPointerCancel);
     inputBound = true;
   }
 
