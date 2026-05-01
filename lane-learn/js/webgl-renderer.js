@@ -39,12 +39,17 @@ export function createTrackRenderer(container) {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
-    powerPreference: "high-performance",
+    powerPreference: "default",
+    failIfMajorPerformanceCaveat: false,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  try {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+  } catch {
+    renderer.toneMapping = THREE.NoToneMapping;
+  }
   renderer.domElement.style.position = "absolute";
   renderer.domElement.style.left = "0";
   renderer.domElement.style.top = "0";

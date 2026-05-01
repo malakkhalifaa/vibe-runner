@@ -90,7 +90,7 @@ let sparks = [];
 let cameraShake = 0;
 
 function refreshLayout() {
-  if (!gameHost || !fxCanvas || !ctx) return;
+  if (!gameHost) return;
   const r = gameHost.getBoundingClientRect();
   W = Math.max(280, Math.floor(r.width) || 480);
   H = Math.round(W * 1.5);
@@ -99,12 +99,14 @@ function refreshLayout() {
   ROAD_W = W * 0.9;
   PLAYER_DRAW_Y = ROAD_BOTTOM - 38;
   LANE_W = W / LANES;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  fxCanvas.width = Math.floor(W * dpr);
-  fxCanvas.height = Math.floor(H * dpr);
-  fxCanvas.style.width = `${W}px`;
-  fxCanvas.style.height = `${H}px`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (fxCanvas && ctx) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    fxCanvas.width = Math.floor(W * dpr);
+    fxCanvas.height = Math.floor(H * dpr);
+    fxCanvas.style.width = `${W}px`;
+    fxCanvas.style.height = `${H}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
   track3d?.resize(W, H);
 }
 
@@ -169,7 +171,11 @@ function announceQuestion(g) {
   const id = g.question.id;
   if (id === lastSpokenQId) return;
   lastSpokenQId = id;
-  voice.speakQuestion(g.question.prompt, g.question.choices);
+  // Mic + TTS together often cut the voice off in Chrome/Edge — pause STT until the read finishes.
+  if (micArmed && voice.canUseRecognition()) voice.stopListening();
+  voice.speakQuestion(g.question.prompt, g.question.choices, () => {
+    resumeVoiceIfNeeded();
+  });
 }
 
 function syncQuestionPanel() {
@@ -251,7 +257,10 @@ function wireVoiceUi() {
     if (el.voiceReadAloud?.checked && g) {
       lastSpokenQId = "";
       announceQuestion(g);
-    } else voice.stopSpeaking();
+    } else {
+      voice.stopSpeaking();
+      resumeVoiceIfNeeded();
+    }
   });
 }
 

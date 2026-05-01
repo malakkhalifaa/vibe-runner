@@ -9,6 +9,45 @@ const TOPIC_PATTERNS = {
   algorithms: [/\balgorithm/i, /\bdata struct/i, /\bleetcode\b/i, /\binterview\b/i, /\bbig ?o\b/i, /\bcomplexity\b/i],
   web: [/\bhttp\b/i, /\brest\b/i, /\bapi\b/i, /\bhtml\b/i, /\bcss\b/i, /\bweb\b/i],
   sql: [/\bsql\b/i, /\bpostgres/i, /\bmysql\b/i, /\bquery\b/i, /\bdatabase\b/i, /\bdb\b/i],
+  math: [
+    /\bmaths?\b/i,
+    /\balgebra\b/i,
+    /\bcalculus\b/i,
+    /\bgeometry\b/i,
+    /\btrigonometry\b/i,
+    /\barithmetic\b/i,
+    /\blinear algebra\b/i,
+    /\bstatistics\b/i,
+    /\bprobability\b/i,
+    /\bdiscrete math\b/i,
+    /\bpre-?calc\b/i,
+    /\bnumber theory\b/i,
+  ],
+  assembly: [
+    /\bassembly\b/i,
+    /\basm\b/i,
+    /\bx86\b/i,
+    /\barm\b/i,
+    /\bmips\b/i,
+    /\bmachine code\b/i,
+    /\bassembler\b/i,
+    /\bnasm\b/i,
+    /\bgas\b/i,
+    /\blow-?level\b/i,
+    /\bregisters?\b/i,
+    /\binstruction set\b/i,
+  ],
+  systems: [
+    /\bc\+\+\b/i,
+    /\boperating system\b/i,
+    /\bos kernels?\b/i,
+    /\bmemory management\b/i,
+    /\brust\b/i,
+    /\bgolang\b/i,
+    /\bembedded\b/i,
+    /\bfirmware\b/i,
+  ],
+  science: [/\bphysics\b/i, /\bchemistry\b/i, /\bbiolog/i, /\bastro/i],
 };
 
 const TOPIC_LABELS = {
@@ -18,6 +57,10 @@ const TOPIC_LABELS = {
   algorithms: "Algorithms",
   web: "Web / HTTP",
   sql: "SQL",
+  math: "Math",
+  assembly: "Assembly / low-level",
+  systems: "Systems / C++ / Rust",
+  science: "Science",
 };
 
 /**
@@ -64,9 +107,15 @@ function shuffle(arr) {
 }
 
 /**
- * @param {string[]} topics
+ * @param {string[]} topics matched topic ids
+ * @param {string} [goalHint] raw user goal — used when nothing matched so we echo their words
  */
-export function humanizeTopics(topics) {
-  if (!topics.length) return "a mixed CS sprint";
-  return topics.map((t) => TOPIC_LABELS[t] || t).join(", ");
+export function humanizeTopics(topics, goalHint = "") {
+  if (topics.length) return topics.map((t) => TOPIC_LABELS[t] || t).join(", ");
+  const g = (goalHint || "").trim().replace(/\s+/g, " ");
+  if (g) {
+    const clip = g.length > 96 ? `${g.slice(0, 93)}…` : g;
+    return `your goals (“${clip}”) — mixed quiz gates`;
+  }
+  return "a mixed practice run";
 }

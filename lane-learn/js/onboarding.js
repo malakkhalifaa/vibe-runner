@@ -72,7 +72,7 @@ export function startOnboarding(onDone) {
 
   function botOpen() {
     addBubble(
-      "Hey — I'm Lane Coach. I’ll ask two quick things, then line up gates that match what you want to learn.",
+      "Hey — I'm Lane Coach. Two quick questions, then I’ll line up gates from what you type — coding, math, assembly, science, and more.",
       "bot"
     );
     addBubble("First: what should I call you?", "bot");
@@ -84,7 +84,7 @@ export function startOnboarding(onDone) {
   async function afterGoal() {
     phase = steps.WRAP_UP;
     const { topics } = classifyLearningGoals(answers.goal);
-    const topicLine = humanizeTopics(topics);
+    const topicLine = humanizeTopics(topics, answers.goal);
     const pool = buildPersonalizedPool(QUESTION_POOL, topics.length ? topics : null);
 
     addBubble(
@@ -129,7 +129,7 @@ export function startOnboarding(onDone) {
       answers.name = raw.slice(0, 48);
       phase = steps.ASK_GOAL;
       addBubble(`Nice to meet you, ${answers.name}. What do you want to learn or level up in?`, "bot");
-      input.placeholder = "e.g. Python basics, JS interviews, Git…";
+      input.placeholder = "e.g. Maths, assembly, Python, physics…";
       return;
     }
 

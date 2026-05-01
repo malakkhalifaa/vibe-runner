@@ -42,10 +42,19 @@ function ensureVoicesLoaded() {
   speechSynthesis.getVoices();
 }
 
+/** Fired when the current (or canceled) question read finishes — e.g. resume mic. */
+let speakDoneCallback = null;
+/** True while an utterance from speakQuestion should be treated as active (avoids double onDone). */
+let ttsUtteranceLive = false;
+
 export function stopSpeaking() {
+  const done = speakDoneCallback;
+  speakDoneCallback = null;
+  ttsUtteranceLive = false;
   try {
     window.speechSynthesis.cancel();
   } catch (_) {}
+  done?.();
 }
 
 /**
@@ -83,12 +92,19 @@ export function parseLaneFromSpeech(transcript, choices) {
 }
 
 /**
+ * Read the full prompt, then lane choices (extra wording helps TTS pause clearly).
  * @param {string} prompt
  * @param {string[]} choices
+ * @param {() => void} [onDone] when this read finishes, errors, or is canceled
  */
-export function speakQuestion(prompt, choices) {
-  if (!canUseTTS()) return;
+export function speakQuestion(prompt, choices, onDone) {
+  if (!canUseTTS()) {
+    onDone?.();
+    return;
+  }
   stopSpeaking();
+  speakDoneCallback = onDone ?? null;
+  ttsUtteranceLive = true;
   ensureVoicesLoaded();
   let voicePick = pickFemaleEnglishVoice();
   if (!voicePick) {
@@ -97,11 +113,21 @@ export function speakQuestion(prompt, choices) {
   }
   const laneNames = ["Left", "Center", "Right"];
   const bits = choices.map((c, i) => `${laneNames[i]}, ${c}`);
-  const u = new SpeechSynthesisUtterance(`${prompt}. ${bits.join(". ")}.`);
+  const text = `${prompt}. — Now the three answer lanes — ${bits.join(" — ")}.`;
+  const u = new SpeechSynthesisUtterance(text);
   if (voicePick) u.voice = voicePick;
-  u.rate = 0.92;
+  u.rate = 0.84;
   u.pitch =
     voicePick && /male|david|mark|fred|daniel|james/i.test(voicePick.name) ? 1.18 : 1.08;
+  const finish = () => {
+    if (!ttsUtteranceLive) return;
+    ttsUtteranceLive = false;
+    const cb = speakDoneCallback;
+    speakDoneCallback = null;
+    cb?.();
+  };
+  u.onend = finish;
+  u.onerror = finish;
   window.speechSynthesis.speak(u);
 }
 
