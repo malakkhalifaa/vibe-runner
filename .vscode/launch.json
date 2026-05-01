@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions for existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Chrome: lane-learn (localhost:3000)",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/lane-learn",
+            "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile"
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Edge: lane-learn (localhost:3000)",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/lane-learn",
+            "userDataDir": "${workspaceFolder}/.vscode/edge-debug-profile"
+        }
+    ]
+}

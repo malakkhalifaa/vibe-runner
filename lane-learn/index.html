@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Vibe Runner — Learn in the lane</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="onboarding" class="onboarding" aria-label="Coach onboarding">
+    <div class="coach-shell">
+      <header class="coach-top">
+        <span class="coach-badge">Lane Coach</span>
+        <p class="coach-sub">Offline topic matching + optional OpenAI for chatty tips</p>
+      </header>
+      <div id="coachChat" class="coach-chat" role="log" aria-live="polite"></div>
+      <div id="coachTyping" class="coach-typing hidden" aria-hidden="true">Coach is thinking…</div>
+      <form id="coachForm" class="coach-form">
+        <input type="text" id="coachInput" name="message" autocomplete="name" placeholder="Type here…" maxlength="500" />
+        <button type="submit" class="btn coach-send">Send</button>
+      </form>
+      <button type="button" id="btnStartRun" class="btn primary coach-start hidden">Start run</button>
+      <details class="coach-advanced">
+        <summary>AI coach (optional)</summary>
+        <p class="coach-advanced-note">
+          Add an <a href="https://platform.openai.com/docs/overview" rel="noopener noreferrer" target="_blank">OpenAI</a> API key for richer replies. Stored only in this browser (localStorage). Leave empty for offline-only tips.
+        </p>
+        <div class="coach-key-row">
+          <input type="password" id="openaiKey" class="coach-key-input" placeholder="sk-…" autocomplete="off" />
+          <button type="button" id="saveKey" class="btn ghost coach-key-save">Save key</button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="hud">
+      <div class="hud-left">
+        <div class="brand">Vibe Runner</div>
+        <div class="player-line">Pilot: <strong id="playerHud">Runner</strong></div>
+      </div>
+      <div class="stats">
+        <span><strong id="score">0</strong> pts</span>
+        <span class="sep">·</span>
+        <span><strong id="coinsHud">0</strong> coins</span>
+        <span class="sep">·</span>
+        <span><strong id="dist">0</strong> m</span>
+        <span class="sep">·</span>
+        <span>combo <strong id="combo">0</strong></span>
+        <span class="sep">·</span>
+        <span>lives <strong id="lives">3</strong></span>
+      </div>
+    </header>
+
+    <div class="question-panel question-panel-glass" id="questionPanel" aria-live="polite">
+      <div class="q-panel-top">
+        <div class="q-panel-intro">
+          <span class="q-eyebrow">Quiz gate ahead</span>
+          <p class="q-lead">Pick the <strong>correct</strong> lane before the <span class="neon-word">neon beam</span> reaches you. Gold rings = bonus. Red pillars = dodge.</p>
+          <details class="how-details">
+            <summary>Controls &amp; voice</summary>
+            <p class="q-hint q-hint-controls" id="interactionHint">
+              Tap a lane card · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · arrows · swipe the road · <strong>Mic</strong> (Chrome / Edge): say <em>left</em>, <em>center</em>, or <em>right</em>.
+            </p>
+          </details>
+        </div>
+        <div class="voice-bar" role="group" aria-label="Voice agent">
+          <label class="voice-toggle">
+            <input type="checkbox" id="voiceReadAloud" />
+            <span class="voice-toggle-ui" aria-hidden="true"></span>
+            <span>Read aloud <span class="voice-note">(woman’s voice if your system has one)</span></span>
+          </label>
+          <button type="button" id="voiceMicBtn" class="voice-mic-btn" aria-pressed="false" title="Say: left, center, or right — or speak an answer">
+            <span class="voice-mic-glyph" aria-hidden="true"></span>
+            <span class="voice-mic-label">Mic</span>
+          </button>
+        </div>
+      </div>
+      <p class="q-text" id="questionText">Move into the lane with the correct answer.</p>
+      <div class="q-choices q-choices-interactive" id="choicesRow" role="group" aria-label="Answer lanes"></div>
+    </div>
+
+    <div id="gameHost" class="game-host">
+      <canvas id="fxCanvas" class="fx-overlay" aria-hidden="true"></canvas>
+    </div>
+
+    <div class="controls-hint">
+      WebGL road — works on phone &amp; desktop. Voice read-aloud uses your system’s English voices once per question.
+      <span class="mobile-hint">Swipe the play area to change lane</span>
+    </div>
+
+    <div id="overlay" class="overlay hidden">
+      <div class="card">
+        <h2 id="overlayTitle">Paused</h2>
+        <p id="overlayMsg"></p>
+        <button type="button" id="btnPrimary" class="btn primary">Continue</button>
+        <button type="button" id="btnSecondary" class="btn ghost">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
