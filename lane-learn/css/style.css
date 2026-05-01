@@ -711,6 +711,35 @@ button.choice-pill.is-active .choice-pill-text {
   z-index: 2;
 }
 
+.webgl-fallback-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 18px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #e8ecf2;
+  background: linear-gradient(165deg, rgba(10, 14, 22, 0.97), rgba(6, 8, 14, 0.98));
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  box-shadow: inset 0 0 40px rgba(45, 212, 191, 0.06);
+  pointer-events: auto;
+}
+
+.webgl-fallback-banner p {
+  margin: 0;
+}
+
+.webgl-fallback-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .q-lead {
   margin: 0 0 10px;
   font-size: 0.88rem;

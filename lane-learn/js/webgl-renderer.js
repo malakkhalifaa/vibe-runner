@@ -27,7 +27,60 @@ function makeStarfield() {
   return new THREE.Points(geo, mat);
 }
 
+/**
+ * Sandboxed / GPU-disabled hosts (e.g. Cursor Simple Browser) throw when creating WebGLRenderer.
+ * @param {HTMLElement} container
+ */
+function createWebglStub(container) {
+  if (!container.querySelector("[data-webgl-fallback]")) {
+    const layer = document.createElement("div");
+    layer.dataset.webglFallback = "1";
+    layer.className = "webgl-fallback-banner";
+    const p1 = document.createElement("p");
+    const lead = document.createElement("strong");
+    lead.textContent = "WebGL isn’t available in this viewer";
+    p1.appendChild(lead);
+    p1.appendChild(
+      document.createTextNode(
+        " — common in embedded or sandboxed browsers (GPU disabled). Open the same URL in Chrome, Edge, or Safari for the 3D lane."
+      )
+    );
+    const p2 = document.createElement("p");
+    p2.className = "webgl-fallback-sub";
+    p2.textContent =
+      "You can still play: use lane cards, number keys, arrows, or swipe — scoring and gates work without the 3D view.";
+    layer.appendChild(p1);
+    layer.appendChild(p2);
+    container.appendChild(layer);
+  }
+  return {
+    sync() {},
+    resize() {},
+    dispose() {
+      container.querySelector("[data-webgl-fallback]")?.remove();
+    },
+    renderer: null,
+    scene: null,
+    camera: null,
+  };
+}
+
 export function createTrackRenderer(container) {
+  /** @type {THREE.WebGLRenderer | null} */
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "default",
+      failIfMajorPerformanceCaveat: false,
+    });
+    if (!renderer.getContext()) throw new Error("No WebGL context");
+  } catch (err) {
+    console.warn("WebGL unavailable:", err);
+    return createWebglStub(container);
+  }
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x03050a);
   scene.fog = new THREE.FogExp2(0x050912, 0.038);
@@ -36,12 +89,6 @@ export function createTrackRenderer(container) {
   camera.position.set(0, 2.45, 5.35);
   camera.lookAt(0, 0.55, -10);
 
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: false,
-    powerPreference: "default",
-    failIfMajorPerformanceCaveat: false,
-  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   try {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
