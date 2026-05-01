@@ -28,37 +28,158 @@ function makeStarfield() {
 }
 
 /**
- * Sandboxed / GPU-disabled hosts (e.g. Cursor Simple Browser) throw when creating WebGLRenderer.
+ * Canvas2D “fake lane” when WebGL is missing (sandboxed IDE browser, GPU off, etc.).
  * @param {HTMLElement} container
  */
-function createWebglStub(container) {
-  if (!container.querySelector("[data-webgl-fallback]")) {
-    const layer = document.createElement("div");
-    layer.dataset.webglFallback = "1";
-    layer.className = "webgl-fallback-banner";
-    const p1 = document.createElement("p");
-    const lead = document.createElement("strong");
-    lead.textContent = "WebGL isn’t available in this viewer";
-    p1.appendChild(lead);
-    p1.appendChild(
-      document.createTextNode(
-        " — common in embedded or sandboxed browsers (GPU disabled). Open the same URL in Chrome, Edge, or Safari for the 3D lane."
-      )
-    );
-    const p2 = document.createElement("p");
-    p2.className = "webgl-fallback-sub";
-    p2.textContent =
-      "You can still play: use lane cards, number keys, arrows, or swipe — scoring and gates work without the 3D view.";
-    layer.appendChild(p1);
-    layer.appendChild(p2);
-    container.appendChild(layer);
+function createCanvas2dTrackRenderer(container) {
+  const canvas = document.createElement("canvas");
+  canvas.className = "track-2d-canvas";
+  canvas.dataset.webglFallback = "1";
+  canvas.setAttribute("aria-hidden", "true");
+  canvas.style.cssText =
+    "position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;touch-action:none;";
+  container.insertBefore(canvas, container.firstChild);
+
+  let cw = 1;
+  let ch = 1;
+  /** @type {CanvasRenderingContext2D | null} */
+  let ctx2 = canvas.getContext("2d");
+
+  function resize(w, h) {
+    cw = Math.max(1, w | 0);
+    ch = Math.max(1, h | 0);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(cw * dpr);
+    canvas.height = Math.floor(ch * dpr);
+    canvas.style.width = `${cw}px`;
+    canvas.style.height = `${ch}px`;
+    ctx2 = canvas.getContext("2d");
+    if (ctx2) ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
+
+  function laneBottomX(lane) {
+    const margin = cw * 0.12;
+    const span = Math.max(10, cw - 2 * margin);
+    return margin + (lane + 0.5) * (span / 3);
+  }
+
+  function interpolateX(lane, y, vx, vy, bY) {
+    const denom = Math.max(1e-6, bY - vy);
+    const p = Math.max(0, Math.min(1, (y - vy) / denom));
+    const topX = vx + (lane - 1) * cw * 0.11;
+    const botX = laneBottomX(lane);
+    return topX + (botX - topX) * p;
+  }
+
+  function sync(state) {
+    if (!ctx2 || cw < 8 || ch < 8) return;
+    const { playerTrackPos, playerLane, scroll, gates, trackPickups, cameraShake } = state;
+
+    const shake = (cameraShake || 0) * 12;
+    const ox = shake ? (Math.random() - 0.5) * shake : 0;
+    const oy = shake ? (Math.random() - 0.5) * shake : 0;
+    ctx2.save();
+    ctx2.translate(ox, oy);
+
+    ctx2.fillStyle = "#050912";
+    ctx2.fillRect(0, 0, cw, ch);
+
+    const vx = cw / 2;
+    const vy = ch * 0.2;
+    const bY = ch * 0.97;
+    const bL = cw * 0.06;
+    const bR = cw * 0.94;
+    const tW = cw * 0.13;
+
+    ctx2.fillStyle = "#0c121c";
+    ctx2.beginPath();
+    ctx2.moveTo(bL, bY);
+    ctx2.lineTo(vx - tW, vy);
+    ctx2.lineTo(vx + tW, vy);
+    ctx2.lineTo(bR, bY);
+    ctx2.closePath();
+    ctx2.fill();
+
+    ctx2.strokeStyle = "rgba(45, 212, 191, 0.45)";
+    ctx2.lineWidth = 2;
+    ctx2.beginPath();
+    ctx2.moveTo(vx, vy);
+    ctx2.lineTo(cw * 0.365, bY);
+    ctx2.moveTo(vx, vy);
+    ctx2.lineTo(cw * 0.635, bY);
+    ctx2.stroke();
+
+    const stripe = 38 + (scroll * 0.35) % 38;
+    ctx2.strokeStyle = "rgba(45, 212, 191, 0.14)";
+    ctx2.lineWidth = 1;
+    for (let i = -2; i < 22; i++) {
+      const ty = ((i * stripe + (scroll * 2.8) % stripe) / ch) * (bY - vy) + vy;
+      if (ty < vy || ty > bY) continue;
+      const spread = ((ty - vy) / (bY - vy)) * cw * 0.33 + cw * 0.07;
+      ctx2.beginPath();
+      ctx2.moveTo(vx - spread, ty);
+      ctx2.lineTo(vx + spread, ty);
+      ctx2.stroke();
+    }
+
+    const gSorted = [...gates].sort((a, b) => a.at - b.at);
+    for (const g of gSorted) {
+      if (g.passed) continue;
+      const ahead = g.at - playerTrackPos;
+      if (ahead < -30 || ahead > 520) continue;
+      const y = bY - 22 - Math.min(1, ahead / 240) * (bY - vy - 48);
+      const spread = ((y - vy) / (bY - vy)) * cw * 0.4 + cw * 0.05;
+      ctx2.fillStyle = "rgba(45, 212, 191, 0.4)";
+      ctx2.fillRect(vx - spread, y - 5, spread * 2, 10);
+      break;
+    }
+
+    for (const p of trackPickups) {
+      if (p.kind === "coin" && p.collected) continue;
+      if (p.kind === "hazard" && p.hit) continue;
+      const ahead = p.at - playerTrackPos;
+      if (ahead < -45 || ahead > 480) continue;
+      const y = bY - 32 - Math.min(1, ahead / 250) * (bY - vy - 64);
+      const x = interpolateX(p.lane, y, vx, vy, bY);
+      if (p.kind === "coin") {
+        ctx2.fillStyle = "#fbbf24";
+        ctx2.beginPath();
+        ctx2.arc(x, y, 10, 0, Math.PI * 2);
+        ctx2.fill();
+      } else {
+        ctx2.fillStyle = "rgba(220, 38, 38, 0.92)";
+        ctx2.fillRect(x - 7, y - 18, 14, 36);
+      }
+    }
+
+    const lane = Math.max(0, Math.min(2, playerLane | 0));
+    const px = laneBottomX(lane);
+    const py = bY - ch * 0.11;
+    ctx2.fillStyle = "#2dd4bf";
+    ctx2.beginPath();
+    ctx2.arc(px, py, 18, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = "#e8b8a8";
+    ctx2.beginPath();
+    ctx2.arc(px, py - 22, 12, 0, Math.PI * 2);
+    ctx2.fill();
+
+    ctx2.fillStyle = "rgba(139, 149, 168, 0.9)";
+    ctx2.font = '600 11px system-ui, "DM Sans", sans-serif';
+    ctx2.textAlign = "center";
+    ctx2.fillText("2D lane · use Chrome / Edge / Safari for full WebGL 3D", cw / 2, ch - 10);
+
+    ctx2.restore();
+  }
+
+  function dispose() {
+    canvas.remove();
+  }
+
   return {
-    sync() {},
-    resize() {},
-    dispose() {
-      container.querySelector("[data-webgl-fallback]")?.remove();
-    },
+    sync,
+    resize,
+    dispose,
     renderer: null,
     scene: null,
     camera: null,
@@ -78,9 +199,10 @@ export function createTrackRenderer(container) {
     if (!renderer.getContext()) throw new Error("No WebGL context");
   } catch (err) {
     console.warn("WebGL unavailable:", err);
-    return createWebglStub(container);
+    return createCanvas2dTrackRenderer(container);
   }
 
+  try {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x03050a);
   scene.fog = new THREE.FogExp2(0x050912, 0.038);
@@ -321,8 +443,16 @@ export function createTrackRenderer(container) {
 
   function dispose() {
     renderer.dispose();
-    container.removeChild(renderer.domElement);
+    if (renderer.domElement.parentNode === container) container.removeChild(renderer.domElement);
   }
 
   return { sync, resize, dispose, renderer, scene, camera };
+  } catch (sceneErr) {
+    console.warn("WebGL scene failed, using 2D canvas:", sceneErr);
+    try {
+      renderer.dispose();
+      if (renderer.domElement.parentNode === container) container.removeChild(renderer.domElement);
+    } catch (_) {}
+    return createCanvas2dTrackRenderer(container);
+  }
 }
