@@ -709,6 +709,7 @@ export function startGame(profile) {
   }
   ensureResizeObserver();
   refreshLayout();
+  requestAnimationFrame(() => refreshLayout());
 
   wireVoiceUi();
   updateMicButtonEnabled();

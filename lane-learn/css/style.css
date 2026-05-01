@@ -693,8 +693,11 @@ button.choice-pill.is-active .choice-pill-text {
   background: #03050a;
 }
 
+/* touch-action is not inherited — canvases default to `auto`, so mobile
+   browsers may steal horizontal swipes for scroll/back-gesture. */
 .game-host > canvas:not(.fx-overlay) {
   display: block;
+  touch-action: none;
 }
 
 .fx-overlay {
@@ -703,6 +706,7 @@ button.choice-pill.is-active .choice-pill-text {
   top: 0;
   width: 100%;
   height: 100%;
+  touch-action: none;
   pointer-events: none;
   z-index: 2;
 }
