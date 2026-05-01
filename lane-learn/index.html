@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Vibe Runner — Learn in the lane</title>
+  <link rel="icon" href="img/vibe-runner-logo.png" type="image/png" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,8 +21,14 @@
   <div id="onboarding" class="onboarding" aria-label="Coach onboarding">
     <div class="coach-shell">
       <header class="coach-top">
-        <span class="coach-badge">Lane Coach</span>
-        <p class="coach-sub">Offline topic matching + optional OpenAI for chatty tips</p>
+        <div class="coach-brand-row">
+          <img class="coach-logo-mark" src="img/vibe-runner-logo.png" width="44" height="44" alt="" decoding="async" />
+          <div class="coach-brand-copy">
+            <span class="coach-product">Vibe Runner</span>
+            <span class="coach-badge" tabindex="0">Lane Coach</span>
+            <p class="coach-sub">Offline topic matching + optional OpenAI for chatty tips</p>
+          </div>
+        </div>
       </header>
       <div id="coachChat" class="coach-chat" role="log" aria-live="polite"></div>
       <div id="coachTyping" class="coach-typing hidden" aria-hidden="true">Coach is thinking…</div>
@@ -46,7 +53,10 @@
   <div id="app" class="hidden">
     <header class="hud">
       <div class="hud-left">
-        <div class="brand">Vibe Runner</div>
+        <a class="brand" href="/" aria-label="Vibe Runner home">
+          <img class="brand-mark" src="img/vibe-runner-logo.png" width="40" height="40" alt="" decoding="async" />
+          <span class="brand-text">Vibe Runner</span>
+        </a>
         <div class="player-line">Pilot: <strong id="playerHud">Runner</strong></div>
       </div>
       <div class="stats">
